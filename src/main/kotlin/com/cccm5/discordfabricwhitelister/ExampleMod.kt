@@ -1,4 +1,4 @@
-package net.fabricmc.example
+package com.cccm5.discordfabricwhitelister
 
 // For support join https://discord.gg/v6v4pMv
 

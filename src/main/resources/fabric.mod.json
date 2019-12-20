@@ -1,29 +1,29 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "discordfabricwhitelister",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Discord Fabric Whitelister",
+  "description": "Allows whitelisting to fabric servers from discord",
   "authors": [
-    "Me!"
+    "cccm5"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/cccm5/discordfabricwhitelister",
+    "sources": "https://github.com/cccm5/discordfabricwhitelister"
   },
 
   "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/discordfabricwhitelister/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleModKt::init"
+      "com.cccm5.discordfabricwhitelister.ExampleModKt::init"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "discordfabricwhitelister.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.7.1",

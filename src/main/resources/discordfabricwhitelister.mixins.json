@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "net.fabricmc.example.mixin",
+  "package": "com.cccm5.discordfabricwhitelister.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
   ],
