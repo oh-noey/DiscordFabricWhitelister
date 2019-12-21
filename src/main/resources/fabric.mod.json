@@ -18,13 +18,13 @@
 
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "com.cccm5.discordfabricwhitelister.ExampleModKt::init"
+    "server": [
+      {
+        "adapter": "kotlin",
+        "value": "com.cccm5.discordfabricwhitelister.Whitelister"
+      }
     ]
   },
-  "mixins": [
-    "discordfabricwhitelister.mixins.json"
-  ],
   "depends": {
     "fabricloader": ">=0.7.1",
     "fabric": "*",
