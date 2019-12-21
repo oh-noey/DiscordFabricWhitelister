@@ -25,19 +25,6 @@ object Whitelister: DedicatedServerModInitializer {
     private val LOGGER: Logger = LogManager.getLogger()
     private val servers: MutableList<MinecraftDedicatedServer> = mutableListOf()
     override fun onInitializeServer() {
-        // register minecraft server events
-        ServerStartCallback.EVENT.register(ServerStartCallback { server: MinecraftServer ->
-            if(server is MinecraftDedicatedServer) {
-                LOGGER.info("Adding server ${server.name}")
-                servers.add(server)
-            }
-        })
-        ServerStopCallback.EVENT.register(ServerStopCallback { server: MinecraftServer ->
-            if(server is MinecraftDedicatedServer) {
-                LOGGER.info("Removing server $server")
-                servers.remove(server)
-            }
-        })
         // load bot token
         val cfgFile = File(FabricLoader.getInstance().configDirectory, "whitelister.json")
         val json = Json(JsonConfiguration.Stable)
@@ -68,6 +55,24 @@ object Whitelister: DedicatedServerModInitializer {
             return
         }
         val client =  DiscordClientBuilder(token).build()
+        try {
+            client.login().subscribe()
+        } catch (e: Exception){
+            LOGGER.error("Could not login to discord")
+        }
+        // register minecraft server events
+        ServerStartCallback.EVENT.register(ServerStartCallback { server: MinecraftServer ->
+            if(server is MinecraftDedicatedServer) {
+                LOGGER.info("Adding server ${server.name}")
+                servers.add(server)
+            }
+        })
+        ServerStopCallback.EVENT.register(ServerStopCallback { server: MinecraftServer ->
+            if(server is MinecraftDedicatedServer) {
+                LOGGER.info("Removing server $server")
+                servers.remove(server)
+            }
+        })
         client.eventDispatcher.on(ReadyEvent::class.java).subscribe(
             { ready: ReadyEvent ->
                 LOGGER.info("Logged into discord as " + ready.self.username)
@@ -108,11 +113,5 @@ object Whitelister: DedicatedServerModInitializer {
                 }
             }
         }, {error -> LOGGER.error(error)})
-        try {
-            client.login().subscribe()
-        } catch (e: Exception){
-            LOGGER.error("Could not login to discord")
-        }
-
     }
 }
