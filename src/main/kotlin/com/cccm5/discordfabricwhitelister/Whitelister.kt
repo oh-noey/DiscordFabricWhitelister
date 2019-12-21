@@ -90,6 +90,10 @@ object Whitelister: DedicatedServerModInitializer {
                                 continue
                             }
                             val userProfile = server.userCache.findByName(userName)
+                            if(userProfile == null){
+                                message.channel.block()?.createMessage("Invalid user profile")?.block()
+                                continue
+                            }
                             if (server.playerManager.isWhitelisted(userProfile)) {
                                 message.channel.block()?.createMessage("You're already whitelisted")?.block()
                                 continue
