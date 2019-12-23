@@ -22,22 +22,43 @@ repositories {
     maven { url = "http://maven.fabricmc.net/" }
     mavenCentral()
     maven { url = "https://kotlin.bintray.com/kotlinx" }
+    maven { url = 'https://repo.spring.io/milestone' }
+    maven { url = 'https://jitpack.io' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/staging' }
 }
 
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API. This is technically optional, but you probably want it anyway.
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modCompile "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
-    modImplementation "com.discord4j:discord4j-core:${project.discord4j_version}"
-    modImplementation "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
+
+    modCompile "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
+    modCompile "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
     modApi "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_runtime_version"
     include "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_runtime_version"
+
+    modCompile "org.javacord:javacord-api:${project.javacord_version}"
+    modCompile "org.javacord:javacord-core:${project.javacord_version}"
+    modCompile "com.vdurmont:emoji-java:5.1.1"
+
+    include "org.javacord:javacord-api:${project.javacord_version}"
+    include "org.javacord:javacord-core:${project.javacord_version}"
+    include "com.squareup.okhttp3:okhttp:3.9.1"
+    include "com.squareup.okhttp3:logging-interceptor:3.9.1"
+    include "com.fasterxml.jackson.core:jackson-databind:2.9.3"
+    include "com.fasterxml.jackson.core:jackson-annotations:2.9.0"
+    include "com.fasterxml.jackson.core:jackson-core:2.9.3"
+    include "com.neovisionaries:nv-websocket-client:2.6"
+    include "com.squareup.okio:okio:1.13.0"
+    include "org.json:json:20170516"
+    include "org.apache.logging.log4j:log4j-api:2.11.0"
+
+    include "com.vdurmont:emoji-java:4.0.0"
 
     // PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
     // You may need to force-disable transitiveness on them.

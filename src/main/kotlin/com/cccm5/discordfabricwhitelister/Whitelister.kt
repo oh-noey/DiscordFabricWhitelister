@@ -1,8 +1,5 @@
 package com.cccm5.discordfabricwhitelister
 
-import discord4j.core.DiscordClientBuilder
-import discord4j.core.event.domain.lifecycle.ReadyEvent
-import discord4j.core.event.domain.message.MessageCreateEvent
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
@@ -16,6 +13,9 @@ import net.minecraft.server.dedicated.MinecraftDedicatedServer
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.io.File
+import org.javacord.*
+import org.javacord.api.DiscordApi
+import org.javacord.api.DiscordApiBuilder
 
 @Serializable
 data class Config(val token: String)
@@ -54,9 +54,9 @@ object Whitelister: DedicatedServerModInitializer {
             LOGGER.error("Change the default discord token in the config file")
             return
         }
-        val client =  DiscordClientBuilder(token).build()
+        lateinit var api: DiscordApi
         try {
-            client.login().subscribe()
+            api = DiscordApiBuilder().setToken(token).login().join()
         } catch (e: Exception){
             LOGGER.error("Could not login to discord")
         }
@@ -73,45 +73,39 @@ object Whitelister: DedicatedServerModInitializer {
                 servers.remove(server)
             }
         })
-        client.eventDispatcher.on(ReadyEvent::class.java).subscribe(
-            { ready: ReadyEvent ->
-                LOGGER.info("Logged into discord as " + ready.self.username)
-            },
-            {error -> LOGGER.error(error)}
-        )
-        client.eventDispatcher.on(MessageCreateEvent::class.java).subscribe({
+        api.addMessageCreateListener {
             val message = it.message
-            val discordUser = it.member.orElse(null)
-            if (message.content.isPresent && message.content.get().startsWith("!whitelist")) {
-                if (message.content.get().trim().equals("!whitelist", true)) {
-                    message.channel.block()?.createMessage("I need a username to whitelist.")?.block()
+            val discordUser = it.messageAuthor
+            if (message.content.startsWith("!whitelist")) {
+                if (message.content.trim().equals("!whitelist", true)) {
+                    message.channel.sendMessage("I need a username to whitelist.")
                 } else {
-                    val (_, userName) = message.content.get().split(" ", limit = 2)
+                    val (_, userName) = message.content.split(" ", limit = 2)
                     if (userName.isNotEmpty()) {
                         for (server in servers) {
-    //                        server.playerManager.getPlayer(userName)
+                            //                        server.playerManager.getPlayer(userName)
                             if (!server.playerManager.isWhitelistEnabled) {
-                                message.channel.block()?.createMessage("I can't whitelist you on a server without a whitelist.")?.block()
+                                message.channel.sendMessage("I can't whitelist you on a server without a whitelist.")
                                 continue
                             }
                             val userProfile = server.userCache.findByName(userName)
                             if(userProfile == null){
-                                message.channel.block()?.createMessage("Invalid user profile")?.block()
+                                message.channel.sendMessage("Invalid user profile")
                                 continue
                             }
                             if (server.playerManager.isWhitelisted(userProfile)) {
-                                message.channel.block()?.createMessage("You're already whitelisted")?.block()
+                                message.channel.sendMessage("You're already whitelisted")
                                 continue
                             }
                             server.playerManager.whitelist.add(WhitelistEntry(userProfile))
-                            message.channel.block()?.createMessage("Whitelisted $userName")?.block()
+                            message.channel.sendMessage("Whitelisted $userName")
                         }
                         if (servers.isEmpty()){
-                            message.channel.block()?.createMessage("I can't whitelist you if there's no severs to be whitelisted on.")?.block()
+                            message.channel.sendMessage("I can't whitelist you if there's no severs to be whitelisted on.")
                         }
                     }
                 }
             }
-        }, {error -> LOGGER.error(error)})
+        }
     }
 }
