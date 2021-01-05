@@ -4,8 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import net.fabricmc.api.DedicatedServerModInitializer
-import net.fabricmc.fabric.api.event.server.ServerStartCallback
-import net.fabricmc.fabric.api.event.server.ServerStopCallback
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.WhitelistEntry
@@ -13,21 +12,23 @@ import net.minecraft.server.dedicated.MinecraftDedicatedServer
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.io.File
-import org.javacord.*
-import org.javacord.api.DiscordApi
-import org.javacord.api.DiscordApiBuilder
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.requests.GatewayIntent;
 
 @Serializable
 data class Config(val token: String)
 
 @Suppress("unused")
-object Whitelister: DedicatedServerModInitializer {
+object Whitelister: DedicatedServerModInitializer, ListenerAdapter() {
     private val LOGGER: Logger = LogManager.getLogger()
     private val servers: MutableList<MinecraftDedicatedServer> = mutableListOf()
     override fun onInitializeServer() {
         // load bot token
-        val cfgFile = File(FabricLoader.getInstance().configDirectory, "whitelister.json")
-        val json = Json(JsonConfiguration.Stable)
+        val cfgFile = File(FabricLoader.getInstance().configDir.toFile(), "whitelister.json")
         if(!cfgFile.exists()){
             if(!cfgFile.createNewFile()){
                 LOGGER.error("Failed to create config file")
@@ -37,7 +38,7 @@ object Whitelister: DedicatedServerModInitializer {
                 LOGGER.error("Can't write to config file")
                 return
             }
-            cfgFile.writeText(json.stringify(Config.serializer(), Config("YOUR_TOKEN_HERE")))
+            cfgFile.writeText(Json.encodeToString(Config.serializer(), Config("YOUR_TOKEN_HERE")))
         }
         if(!cfgFile.canRead()){
             LOGGER.error("Can't read config file")
@@ -45,7 +46,7 @@ object Whitelister: DedicatedServerModInitializer {
         }
         lateinit var token: String
         try {
-            token = json.parse(Config.serializer(), cfgFile.readText()).token
+            token = Json.decodeFromString<Config>(Config.serializer(), cfgFile.readText()).token
         } catch (e: Exception){
             LOGGER.error("Invalid config file.")
             return
@@ -54,58 +55,63 @@ object Whitelister: DedicatedServerModInitializer {
             LOGGER.error("Change the default discord token in the config file")
             return
         }
-        lateinit var api: DiscordApi
-        try {
-            api = DiscordApiBuilder().setToken(token).login().join()
-        } catch (e: Exception){
-            LOGGER.error("Could not login to discord")
-        }
+        lateinit var api: JDA
+
         // register minecraft server events
-        ServerStartCallback.EVENT.register(ServerStartCallback { server: MinecraftServer ->
+        ServerLifecycleEvents.SERVER_STARTED.register { server: MinecraftServer ->
+            if(servers.isEmpty()){
+                try {
+                    api = JDABuilder.createLight(token, GatewayIntent.GUILD_MESSAGES).addEventListeners(this).setActivity(Activity.playing("Minecraft")).build();
+                } catch (e: Exception){
+                    LOGGER.error("Could not login to discord")
+                }
+            }
             if(server is MinecraftDedicatedServer) {
                 LOGGER.info("Adding server ${server.name}")
                 servers.add(server)
             }
-        })
-        ServerStopCallback.EVENT.register(ServerStopCallback { server: MinecraftServer ->
+        }
+        ServerLifecycleEvents.SERVER_STOPPING.register {  server: MinecraftServer ->
             if(server is MinecraftDedicatedServer) {
                 LOGGER.info("Removing server $server")
                 servers.remove(server)
             }
-        })
-        api.addMessageCreateListener {
-            val message = it.message
-            val discordUser = it.messageAuthor
-            if (message.content.startsWith("!whitelist")) {
-                if (message.content.trim().equals("!whitelist", true)) {
-                    message.channel.sendMessage("I need a username to whitelist.")
-                } else {
-                    val (_, userName) = message.content.split(" ", limit = 2)
-                    if (userName.isNotEmpty()) {
-                        for (server in servers) {
-                            //                        server.playerManager.getPlayer(userName)
-                            if (!server.playerManager.isWhitelistEnabled) {
-                                message.channel.sendMessage("I can't whitelist you on a server without a whitelist.")
-                                continue
-                            }
-                            val userProfile = server.userCache.findByName(userName)
-                            if(userProfile == null){
-                                message.channel.sendMessage("Invalid user profile")
-                                continue
-                            }
-                            if (server.playerManager.isWhitelisted(userProfile)) {
-                                message.channel.sendMessage("You're already whitelisted")
-                                continue
-                            }
-                            server.playerManager.whitelist.add(WhitelistEntry(userProfile))
-                            message.channel.sendMessage("Whitelisted $userName")
-                        }
-                        if (servers.isEmpty()){
-                            message.channel.sendMessage("I can't whitelist you if there's no severs to be whitelisted on.")
-                        }
-                    }
-                }
-            }
+            if(servers.isEmpty()) api.shutdown()
         }
+        
+    }
+
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        val contents = event.message.contentRaw
+        val channel = event.channel;
+        if(!contents.startsWith("!whitelist")) return
+        if (contents.trim().equals("!whitelist", true)) {
+            channel.sendMessage("I need a username to whitelist.").queue()
+            return
+        }
+        val (_, userName) = contents.split(" ", limit = 2)
+        if (userName.isEmpty()) return
+        if (servers.isEmpty()) {
+            channel.sendMessage("I can't whitelist you if there's no severs to be whitelisted on.").queue()
+            return
+        }
+        for (server in servers) {
+            if (!server.playerManager.isWhitelistEnabled) {
+                channel.sendMessage("I can't whitelist you on a server without a whitelist.").queue()
+                continue
+            }
+            val userProfile = server.userCache.findByName(userName)
+            if (userProfile == null) {
+                channel.sendMessage("Invalid user profile").queue()
+                continue
+            }
+            if (server.playerManager.isWhitelisted(userProfile)) {
+                channel.sendMessage("You're already whitelisted").queue()
+                continue
+            }
+            server.playerManager.whitelist.add(WhitelistEntry(userProfile))
+            channel.sendMessage("Whitelisted $userName").queue()
+        }
+
     }
 }

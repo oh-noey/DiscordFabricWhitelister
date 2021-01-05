@@ -4,7 +4,7 @@ plugins {
     id "org.jetbrains.kotlin.jvm"
     id 'application'
     id 'com.github.johnrengelman.shadow' version '4.0.4'
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.3.60'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.21'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -39,24 +39,28 @@ dependencies {
 
     modCompile "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
     modCompile "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
-    modApi "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_runtime_version"
-    include "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_runtime_version"
-
-    modCompile "org.javacord:javacord-api:${project.javacord_version}"
-    modCompile "org.javacord:javacord-core:${project.javacord_version}"
+    modApi "org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinx_serialization_runtime_version"
+    include "org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinx_serialization_runtime_version"
+//    include "org.jetbrains.kotlin:kotlinx-serialization-json:$kotlinx_serialization_runtime_version"
+    compile ('net.dv8tion:JDA:4.2.0_224') {
+        exclude module: 'opus-java'
+    }
     modCompile "com.vdurmont:emoji-java:5.1.1"
 
-    include "org.javacord:javacord-api:${project.javacord_version}"
-    include "org.javacord:javacord-core:${project.javacord_version}"
-    include "com.squareup.okhttp3:okhttp:3.9.1"
-    include "com.squareup.okhttp3:logging-interceptor:3.9.1"
-    include "com.fasterxml.jackson.core:jackson-databind:2.9.3"
-    include "com.fasterxml.jackson.core:jackson-annotations:2.9.0"
-    include "com.fasterxml.jackson.core:jackson-core:2.9.3"
-    include "com.neovisionaries:nv-websocket-client:2.6"
-    include "com.squareup.okio:okio:1.13.0"
+    include ('net.dv8tion:JDA:4.2.0_224') {
+        exclude module: 'opus-java'
+    }
+    include "net.sf.trove4j:trove4j:3.0.3"
+    include 'org.slf4j:slf4j-nop:1.7.25'
+    include 'org.slf4j:slf4j-api:1.7.25'
+    include 'org.apache.commons:commons-collections4:4.1'
+    include 'com.neovisionaries:nv-websocket-client:2.10'
+    include 'com.squareup.okhttp3:okhttp:3.13.0'
+    include 'com.squareup.okio:okio:1.17.2'
+    include 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
+    include 'com.fasterxml.jackson.core:jackson-annotations:2.10.1'
+    include 'com.fasterxml.jackson.core:jackson-core:2.10.1'
     include "org.json:json:20170516"
-    include "org.apache.logging.log4j:log4j-api:2.11.0"
 
     include "com.vdurmont:emoji-java:4.0.0"
 
